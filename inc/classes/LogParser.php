@@ -28,8 +28,26 @@ class LogParser
 	 */
 	public static function getNewLines( $regex , $match , $types , $tz , $wanted_lines , $exclude , $file_path , $start_offset , $start_from , $load_more , $old_lastline , $multiline , $search , $data_to_parse , $full , $max_search_log_time )
 	{
+  if ( strtolower( substr( $file_path , -3 ) ) === '.gz' )
+  {
+   //need a better temp file variable in the future
+   $temp_path = $GLOBALS['siteRoot'].'/tmp/' . basename( $file_path , '.gz' );
+   $temp_buffer = 4096;
+   $fg = gzopen ( $file_path , "rb" );
+   $fu = fopen ( $temp_path , "wb" );
+   while( ! gzeof( $fg ) )
+   {
+    fwrite( $fu , gzread( $fg , $temp_buffer ) );
+   }
+   fclose( $fu );
+   gzclose( $fg );
+   $fl = fopen( $temp_path , "r" );
+  }
+  else
+  {
+   $fl = fopen( $file_path , "r" );
+  }
 
-		$fl = fopen( $file_path , "r" );
 		if ( $fl === false )
 		{
 			return '1';
@@ -288,6 +306,11 @@ class LogParser
 		$last_parsed_offset = ftell( $fl );
 
 		fclose( $fl );
+  
+  if ( isset( $temp_path ) )
+  {
+   @unlink( $temp_path );
+  }
 
 		/*
 		|--------------------------------------------------------------------------
@@ -326,7 +349,26 @@ class LogParser
 	 */
 	public static function getLinesFromBottom( $file , $count = 1 )
 	{
-		$fl    = @fopen( $file , "r" );
+  if ( strtolower( substr( $file_path , -3 ) ) === '.gz' )
+  {
+   //need a better temp file variable in the future
+   $temp_path = $GLOBALS['siteRoot'].'/tmp/' . basename( $file_path , '.gz' );
+   $temp_buffer = 4096;
+   $fg = @gzopen ( $file_path , "rb" );
+   $fu = fopen ( $temp_path , "wb" );
+   while( ! gzeof( $fg ) )
+   {
+    fwrite( $fu , gzread( $fg , $temp_buffer ) );
+   }
+   fclose( $fu );
+   gzclose( $fg );
+   $fl = fopen( $temp_path , "r" );
+  }
+  else
+  {
+   $fl = @fopen( $file_path , "r" );
+  }
+  
 		$lines = array();
 		$bytes = 0;
 
@@ -374,6 +416,11 @@ class LogParser
 		}
 
 		fclose( $fl );
+  
+  if ( isset( $temp_path ) )
+  {
+   @unlink( $temp_path );
+  }
 
 		return $lines;
 	}
